@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+
+{% block contents %}
+<form action="" method="post">
+<fieldset>
+<legend>
+Bearbeiten
+</legend>
+{{form.as_p}}
+<input type="submit" name="create" value="Speichern" />
+<input type="submit" name="hide" value="Deaktivieren" />
+<a href="../">Abbrechen</a>
+</fieldset>
+</form>
+{% endblock %}

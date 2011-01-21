@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block javascript %}
+    var children = {
+    {% for child in children %}
+        '{{child.key}}': {{child.count}},
+    {% endfor %}
+    '__foo': null
+    };
+    
+    var childrenBackup = $.extend({}, children);
+    
+    var days = {
+    {% for day in days %}
+        id_{{day.day}}: '{{day.child.key}}',
+    {% endfor %}
+    '__foo': null
+    };
+
+    var daysBackup = $.extend({}, days);
+
+    $(document).ready(function() {
+        $('select').change(function(event) {
+            var id = event.target.id;
+            var oldvalue = days[id];
+            var newvalue = this.value;
+            // alert("Changed " + id + " from " + oldvalue + " to " + newvalue);
+            if (oldvalue && children[oldvalue] > 0)
+                children[oldvalue] -= 1;
+                if (newvalue)
+            children[newvalue] += 1;
+            days[id] = newvalue;
+            $('.count').each(function() {
+                var id = this.id.substring(6);
+                $(this).text(children[id]);
+                if (id == oldvalue || id == newvalue)
+                    $(this).addClass('highlighted');
+            });
+            setHighlight(null);
+            });
+        $('#reset').click(function(event) {
+            children = $.extend({}, childrenBackup);
+            days = $.extend({}, daysBackup);
+            $('.count').each(function() {
+                var id = this.id.substring(6);
+                $(this).text(children[id]);
+                $(this).removeClass('highlighted');
+            });
+            $('table#dates tr').each(function() {
+                var elem = $(this).children();
+                elem.removeClass('highlighted');
+            });
+            return true;
+        });
+    });
+    
+    function setHighlight(target) {
+        for (var id in days) {
+            // alert('checking ' + id);
+            var elem = $("#"+id).parent().siblings();
+            if (days[id] == target && !elem.hasClass('highlighted'))
+                elem.addClass('highlighted');
+            else
+                elem.removeClass('highlighted');
+        }
+    }
+
+{% endblock %}
+
+{% block contents %}
+<h2>Kochliste {{month.month}} {{month.year}}</h2>
+
+<p>
+<a class='navlink' href='{{previous.url}}/'>&lt; {{previous.month}}</a>
+<a class='navlink' href='/'>aktueller Monat</a>
+<a class='navlink' href='{{next.url}}/'>{{next.month}} &gt;</a>
+</p>
+
+<form method='post' action=''>
+<table cellspacing='0' cellpadding='0' border='0' id='dates' class='float'>
+{% for day in days %}
+<tr class='{{ day.rowclass }}'>
+<td class='bold number {{ day.cellclass }}'>{{ day.day }}.</td>
+<td>{{ day.weekday }}</td>
+<td class='menu'>{{ day.editor }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<div class='float'>
+<table cellspacing='0' cellpadding='0' border='0' id='stats'>
+{% for child in children %}
+<tr class='{% cycle even,odd %}'>
+<td><a class='child' id='{{child.key}}' href='#'>{{child.name}}</a></td>
+<td class='number count' id='count_{{child.key}}'>{{child.count}}</td>
+</tr>
+{% endfor %}
+</table>
+
+<p>
+<input id='submit' type='submit' value='Speichern' />
+<input id='reset' type='reset' value='Zurücksetzen' />
+</p>
+
+<p>
+<a class='navlink' href='{{month.url}}/'>Fertig - zurück zur Übersicht</a>
+</p>
+</div>
+
+</form>
+
+<div id='debug'>{{debug}}</div>
+{% endblock %}

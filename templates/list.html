@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+
+{% block contents %}
+<h2>Kinderliste</h2>
+<ul>
+{% for entry in entries %}
+<li>
+{% if entry.current %}
+<a href="edit/?key={{entry.key}}"><span class="bold">{{entry.name}}</span></a>
+{% else %}
+<span>{{entry.name}}</span>
+<a href="setvisible/?key={{entry.key}}&v=true">aktivieren</a>
+<!-- <a href="delete/?key={{entry.key}}">löschen</a> -->
+{% endif %}
+</li>
+{% endfor %}
+</ul>
+
+<p>
+<a href="create/">Neues Kind anlegen</a> |
+{% if all %}
+<a href="../">Nur aktuelle Kinder anzeigen</a>
+{% else %}
+<a href="all/">Alle Kinder anzeigen</a>
+{% endif %} |
+<a href="/">Zurück zur Hauptseite</a>
+</p>
+
+{% endblock %}

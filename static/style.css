@@ -1,0 +1,104 @@
+body {
+    font-family: sans-serif;
+    font-size: 13px;
+}
+
+h1, h2, h3 {
+    color: #669;
+}
+
+.hint {
+    font-size: 12px;
+    color: #669;
+    width: 150px;
+}
+
+.navlink {
+    font-size: 12px;
+    margin-right: 1em;
+    text-decoration: none;
+}
+
+.bold {
+    font-weight: bolder;
+}
+
+.number {
+    text-align: right;
+}
+
+#dates .highlighted {
+    background-color: #cc6;
+    color: #000;
+}
+
+table#dates td.menu {
+    min-width: 220px;
+}
+
+#stats .highlighted {
+    background-color: #000;
+    color: #fff;
+    font-weight: bolder;
+}
+
+a.child {
+    display: block;
+    text-decoration: none;
+    color: #000;
+}
+
+.float {
+    float: left;
+}
+
+table {
+    margin-right: 1.5em;
+    margin-bottom: 1em;
+    border-collapse:collapse;
+}
+
+td {
+    font-family: sans-serif;
+    font-size: 13px;
+    padding: 2px 10px;
+    border: none;
+}
+
+table#dates {
+    border: 1px solid #cc6;
+    min-width: 350px;
+}
+
+table#dates tr.odd {
+    background-color: #ff9;
+}
+
+table#dates tr.even {
+    background-color: #ffc;
+}
+
+#dates .today {
+    background-color: #c33;
+    color: #fff;
+}
+
+table#dates a {
+    color: #960;
+}
+
+table#stats {
+    border: 1px solid #c9c;
+}
+
+table#stats tr.odd {
+    background-color: #fdf;
+}
+
+table#stats tr.even {
+    background-color: #ddf;
+}
+
+div#debug {
+    color: #999;
+}

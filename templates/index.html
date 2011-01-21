@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block javascript %}
+    $(document).ready(function() {
+        $('.menulink').click(function(event) {
+            var link = $(event.target);
+            var text = link.prev().text();
+            var day = event.target.id;
+            var menu = prompt('Menüplan für ' + day + 
+                '. {{month.month}}:', text);
+            if (menu != null) {
+                if (link.prev().length)
+                    link.prev().replaceWith('<span>Speichern...</span>');
+                else
+                    link.before('<span>Speichern...</span>');
+                if (menu)
+                    $(event.target).text("+");
+                else
+                    $(event.target).text("?");
+                var data = {day: day, menu: encodeURIComponent(menu)};
+                $.post(location.href, data, function(data) {
+                    data = "<span>" + data + "</span> ";
+                    if (link.prev().length)
+                        link.prev().replaceWith(data);
+                    else
+                        link.before(data);
+                });
+            }
+            return false;
+        });
+    });
+
+    function setHighlight(id) {
+        $('table#dates tr').each(function() {
+            var elem = $(this).children();
+            if ($(this).hasClass(id) && !elem.hasClass('highlighted'))
+                elem.addClass('highlighted');
+            else
+                elem.removeClass('highlighted');
+        });
+    }
+{% endblock %}
+
+{% block contents %}
+<h2>Kochliste {{month.month}} {{month.year}}</h2>
+
+<p>
+<a class='navlink' href='{{previous.url}}/'>&lt; {{previous.month}}</a>
+<a class='navlink' href='/'>aktueller Monat</a>
+<a class='navlink' href='{{next.url}}/'>{{next.month}} &gt;</a>
+</p>
+
+<table cellspacing='0' cellpadding='0' border='0' id='dates' class='float'>
+{% for day in days %}
+<tr class='{{ day.rowclass}} child_{{day.child.key.id }}'>
+<td class='{{ day.cellclass }} bold number'><span class='{{ day.cellclass }}'>{{ day.day }}.</span></td><td>{{ day.weekday }}</td>
+<td class='bold'>{{ day.child.name }}</td>
+<td class='menu'><span>{{day.menu}}</span> 
+<a class='navlink menulink' id='{{day.day}}' title="Was gibt's?" href='#'>{{day.menulink}}</a></td>
+</tr>
+{% endfor %}
+</table>
+
+<div class='float'>
+<table cellspacing='0' cellpadding='0' border='0' id='stats'>
+{% for child in children %}
+<tr class='{% cycle even,odd %}'>
+<td><a class='child' id='child_{{child.key.id}}' href='#'>{{child.name}}</a></td>
+<td class='number count'>{{child.count}}</td>
+</tr>
+{% endfor %}
+</table>
+
+<p class='hint'><span class='bold'>&uarr; Um zu sehen, wann ihr kocht:</span> Auf den Namen 
+in der lila Liste oben klicken.</p>
+<p class='hint'><span class='bold'>&larr; Um einzutragen, was ihr kocht: </span>Auf das entsprechende 
+Fragezeichen in der gelben Liste klicken.</p>
+
+<p>
+<a class='navlink' href='/plan{{month.url}}/'>Liste bearbeiten</a>
+</p>
+</div>
+
+
+{% endblock %}

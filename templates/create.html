@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+
+{% block contents %}
+<form action="." method="post">
+<fieldset>
+<legend>
+Neues Kind
+</legend>
+{{form.as_p}}
+<input type="submit" name="create" value="Anlegen" />
+<a href="../">Abbrechen</a>
+</fieldset>
+</form>
+{% endblock %}

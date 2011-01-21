@@ -1,0 +1,251 @@
+==================================================
+Using Django with Google Appengine
+==================================================
+
+:Author: Shabda Raaj
+:Version: 1
+:Copyright: This document is released under a `Creative Commons-Attribution`_ license
+
+.. _Creative Commons-Attribution: http://creativecommons.org/licenses/by/3.0/
+
+.. contents::
+
+.. admonition:: Where to get help:
+
+    If you're having trouble going through this tutorial, please post a message
+    to `this thread`_ and I will try to help.
+	
+.. _this thread:
+http://groups.google.com/group/django-users/browse_thread/thread/f59e1e125cdaf0af	
+	
+.. admonition:: Work in progress:
+
+	This is a description of how **I** got Django playing nicely with Appengine, and is "Works on my machine"    cerified. In particular I have not yet been able to deply a Django app on the server. 
+
+About
+---------------------------------
+This is a a short tutorial about using Django with Google Appengine. We will show you how to configure a Django application for use with Appengine, and build a Simple (gasp) blog application.
+We assume you are familiar with Django, and at least have read through the tutorial chapters.
+
+1. Start a project
+-------------------
+Start a project by::
+     
+	G:\>django-admin.py startproject GBlog
+	
+This will create a Django project which you can manage using manage.py in the project directory. You can run this application using manage.py runserver, but what we really want is to run this from Appengine webserver. Well we need to configure things a bit.
+
+2. Download the Appengine SDK.
+-------------------------------
+The `Appengine SDK`_ is available for Linux, Windows, and Mac. Download the Application and run this. THe windows, and Mac versions will add commandes to manage your Appengine experience to the path. If you are on Linux add the dev_appserver.py and appcfg.py to your path so that these files are available.
+
+.. _Appengine  SDK: http://code.google.com/intl/en/appengine/downloads.html
+
+3. Configure the SDK to use Django's WSGI framework.
+------------------------------------------------------	
+To ask dev_appserver.py to server django files, we need to configure things a bit. Create a file named main.py, in the same directory as your project. (The directory which contains manage.py)::
+
+	# Google App Engine imports.
+	from google.appengine.ext.webapp import util
+
+	from django.core.management import setup_environ
+	import settings
+
+	setup_environ(settings)
+
+	# Force Django to reload its settings.
+	from django.conf import settings
+	settings._target = None
+
+	import django.core.handlers.wsgi
+	import django.core.signals
+	import django.db
+	import django.dispatch.dispatcher
+
+
+	# Unregister the rollback event handler.
+	django.dispatch.dispatcher.disconnect(
+	    django.db._rollback_on_exception,
+	    django.core.signals.got_request_exception)
+
+	def main():
+	  # Create a Django application for WSGI.
+	  application = django.core.handlers.wsgi.WSGIHandler()
+
+	  # Run the WSGI CGI handler with that application.
+	  util.run_wsgi_app(application)
+
+	if __name__ == '__main__':
+	  main()
+	  
+This file is taked from `here`_ . But that file has a number of things missing. Before you are able to run a standalone script and call ``from django.conf import settings``, you need to define the ``DJANGO_SETTINGS_MODULE`` variable. This is done in ::
+
+	from django.core.management import setup_environ
+	import settings
+
+	setup_environ(settings)
+
+.. _here: http://code.google.com/appengine/articles/django.html	
+ 
+Next you want to define the Yaml file which will tell appserver a little about your configuration. Save the code below as app.yaml::
+
+	application: blogango
+	version: 1
+	runtime: python
+	api_version: 1
+
+	handlers:
+	- url: /.*
+	  script: main.py
+	  
+Go to a command prompt and type ``dev_appserver GBlog``. You should be now be able to access http://localhost:8080/ and see the powered by Django page. Ooo, you have succesfully run Django not using the Django devlopment server, but the Appengine development server. On to coding.
+
+4. Building the Blog
+----------------------
+The appengine webserver has copy of Django 0.96.1 with it. Though the development trunck has moved a long way in this, let us develop with the 0.96.1, to minimse dependency headaches. This will have a number of surprises for you, if you have been working with the development branch for some time, eg. ``form.cleaned_data`` is clled ``form.clean_data``. Most of the django code will runn unmodified, with the exception of the ORM(ouch!). But fear not, as appengine ORM is eerily similar to the Django ORM, and you should pick it up in no time.
+
+5. Differences between Django and Appengine ORM
+------------------------------------------------
+1. Model classes need to extends ``db.models`` instead of ``model.models``.
+2. ``model.*Field`` is replaced by ``db.*Property``. Eg models.CharField is replaced by db.StringProperty.
+3. There is no ``model.objects`` manager. Instead entity level operations are done by class methods on the model class.
+4. You can not drop to raw SQl, as you can with Django.
+
+6. Defining the datamodel for the blog.
+-----------------------------------------
+Our Blog will have Entries, Comments on Entries, a Blogroll and Blog entity to Store Blog specific details.
+With this in mind, here is the data model, (Do not worry about all the details, we will disect this in a moment).::
+
+	from django.db import models
+
+	from google.appengine.ext import db
+	from google.appengine.api.users import User
+
+	class Blog(db.Model):
+	    """Blog wide settings.
+	     title:title of the Blog.
+	     tag_line: Tagline/subtitle of the blog. This two are genearlly displayed on each page's header.
+	     entries_per_page=Number of entries to display on each page.
+	     recents: Number of recent entries to display in the sidebar.
+	     recent_comments: Number of recent comments to display in the sidebar.
+	    """
+	    title = db.StringProperty(required = True)
+	    tag_line = db.StringProperty(required = True)
+	    entries_per_page = db.IntegerProperty(default = 10)
+	    recents = db.IntegerProperty(default = 5)
+	    recent_comments = db.IntegerProperty(default = 5)
+	    
+	class BlogEntry(db.Model):
+	    """Each blog entry.
+	    Title: Post title.
+	    Slug: Post slug. These two if not given are inferred directly from entry text.
+	    text = The main data for the post.
+	    summary = The summary for the text. probably can can be derived from text, bit we dont want do do that each time main page is displayed.
+	    created_on = The date this entry was created. Defaults to now.
+	    Created by: The user who wrote this.
+	    is_page: IS this a page or a post? Pages are the more important posts, which might be displayed differently. Defaults to false.
+	    is_published: Is this page published. If yes then we would display this on site, otherwise no. Default to true.
+	    comments_allowed: Are comments allowed on this post? Default to True"""
+	    title = db.StringProperty()
+	    slug = db.StringProperty()
+	    text = db.TextProperty()
+	    created_on = db.DateTimeProperty(auto_now_add = 1)
+	    created_by = db.UserProperty()
+	    is_page = db.BooleanProperty(default = False)
+	    is_published = db.BooleanProperty(default = False)
+	    comments_allowed = db.BooleanProperty(default = True)
+	    
+	    def __unicode__(self):
+	        return u'%s' % self.title
+	    
+	    def __str__(self):
+	        return self.__unicode__()
+	    
+	    def get_absolute_url(self):
+	        return '/detail/%s/' % self.key()
+	        
+	class Comment(db.Model):        
+	    """Comments for each blog.
+	    text: The comment text.
+	    comment_for: the Post/Page this comment is created for.
+	    created_on: The date this comment was written on.
+	    created_by: THe user who wrote this comment.
+	    user_name = If created_by is null, this comment was by anonymous user. Name in that case.
+	    email_id: Email-id, as in user_name.
+	    is_spam: Is comment marked as spam? We do not display the comment in those cases."""
+	    text = db.TextProperty()
+	    entry = db.ReferenceProperty(BlogEntry)
+	    created_on = db.DateTimeProperty(auto_now_add = True)
+	    created_by = db.UserProperty(required = False)
+	    name = db.StringProperty()
+	    email = db.EmailProperty()
+	    is_spam = db.BooleanProperty(default = False)
+	    
+	    def get_absolute_url (self):
+	        return '/comment/%s/' %self.id
+	    def __str__(self):
+	        return self.text
+
+	class BlogRoll(db.Model):
+	    url = db.LinkProperty()
+	    text = db.TextProperty()
+	    is_published = db.BooleanProperty(default = True)
+	    
+	    def get_absolute_url (self):
+	      return '%s' %self.url
+		  
+So for our entities, we did not need to extends ``models.Model``, but rather ``db.Model``. SImilarly the entity attributes are ``db.*Property`` instead of ``db.*Field``. Most of the field you would be using in Django are available, and most of them even have keyword arguments same as ``model.*Field``. To sepcify defaults, you can say ``is_published = db.BooleanProperty(default = True)``. Even auto_now_add works similarly to Django.  Unique keyword argument does not work, and there is no ``ManyToManyProperty``.
+
+7. Forms and Views
+--------------------
+
+Let's us see a sample form::
+
+	class CreateEntry(forms.Form):
+	    title = forms.CharField(max_length = 100, required = False) 
+	    text = forms.CharField(widget=forms.Textarea, label = 'Entry')
+	    slug = forms.CharField(max_length = 100, required = False)
+	    
+	    def __init__(self, user, *args, **kwargs):
+	        self.user = user
+	        super(CreateEntry, self).__init__(*args, **kwargs)
+	    
+	    def save(self):
+	        entry = models.BlogEntry()
+	        entry.title = self.clean_data['title']
+	        entry.text = self.clean_data['text']
+	        entry.slug = self.clean_data['slug']
+	        entry.created_by = self.user
+	        entry.put()
+	        return entry
+			
+If you have been using Django trunck, there are two changes from the way, you would have written it. ``entry.title = self.clean_data['title']`` uses ``clean_data`` instead of ``cleaned_data``, this is the namimng convention from 0.96.1. Instead of ``entry.save()``, you used ``entry.put()``. This is when Appengine knows how to store data, in datastore.
+
+Let's see a sample view::
+
+	def detail(request, entry_key):
+	    entry = models.BlogEntry.get(entry_key)
+	    comments = models.Comment.all().filter('entry = ', entry)
+	    if request.method == 'POST':
+	        form = bforms.CommentForm(entry, request.POST)
+	        if form.is_valid():
+	            form.save()
+	            return HttpResponseRedirect('.')
+	    elif request.method == 'GET':
+	        form = bforms.CommentForm(entry)
+	    logging.debug(comments)
+	    logging.debug(1)
+	    payload = dict(entry=entry, form=form,comments=comments)
+	    return render_to_response('blog/detail.html', payload)
+		
+This is also very similar to what would happen in pure Django, with a few changes.  Instead of ``comments = models.Comment.objects.all().filter(entry =  entry)`` you did ``comments = models.Comment.all().filter('entry = ', entry)``. Things to notice are 
+1. There is no .objects manager. Instead table operation are class methods.
+2. ``all``, ``filter`` etc can be chained together, as they can be in Django.
+3. ``filter`` takes filtering critria as ``.filter('entry = ', entry)`` Instead of ``.filter(entry = entry). Similarly, ``.filter(foo__gt = 10)`` will become ``.filter('foo >', 10)``.
+
+There is nothing you would need to change in the way you write URLConfs. Templates also work unmodified. However if your model does not specify ``__str__``, using {{modelobj}} in your template will not output anything.
+
+8. Getting help.
+------------------
+I hope this tutorial has been of help to you. If you have troubles, please make a post to `this thread`_, and I or some body else would surely like to help you. (Scientifically proven fact: Using Django makes people helpful.)
+
