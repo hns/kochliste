@@ -12,7 +12,7 @@ urlpatterns = patterns('views',
     (r'^kinder(?:/all)?/edit/$', 'edit_child'),
     (r'^kinder(?:/all)?/setvisible/$', 'set_visible_child'),
     (r'^kinder(?:/all)?/delete/$', 'delete_child'),
-
+    (r'^robots\.txt$', 'robots'),
     # Uncomment this for admin:
 #     (r'^admin/', include('django.contrib.admin.urls')),
 )

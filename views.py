@@ -193,3 +193,6 @@ def delete_child(request):
     if entry:
         entry.delete()
     return HttpResponseRedirect('../')
+
+def robots(request):
+    return HttpResponse("User-agent: *\nDisallow: /", mimetype="text/plain")
