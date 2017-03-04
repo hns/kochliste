@@ -1,3 +1,4 @@
+# coding: utf-8
 import calendar
 import datetime
 import logging
@@ -16,7 +17,7 @@ import forms
 
 # workaround for calendar.day_name using wrong locale
 day_name = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']
-month_name = ['Jaenner', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
+month_name = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni',
               'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
 
 def index(request, year=None, month=None):
@@ -45,10 +46,9 @@ def normalize_month(year, month):
 def store_day(request, year, month):
     year, month = normalize_month(year, month)
     month_key = format_month(year, month)
-    logging.info("got menu: %s" % request['menu'])
-    item = models.get_day(month_key, int(request['day']))
-    menu = strip_tags(urllib.unquote(request['menu']))
-    item.menu = unicode(menu, 'utf-8')
+    logging.info("got menu: %s" % request.POST['menu'])
+    item = models.get_day(month_key, int(request.POST['day']))
+    item.menu = strip_tags(urllib.unquote(request.POST['menu'].encode('utf-8')))
     item.put()
     return item.menu
 
@@ -59,8 +59,8 @@ def store_month(request, year, month):
     day_dict, count_dict = models.get_days_for_month(month_key)
     days = calendar.Calendar().itermonthdays(year, month)
     for day in days:
-        if day > 0 and request.has_key(str(day)):
-            child_key = request[str(day)]
+        if day > 0 and str(day) in request.POST:
+            child_key = request.POST[str(day)]
             child = models.Child.get(child_key) if child_key else None
             # logging.info("Creating day: %d %s %s", day, month_key, child)
             if day_dict.has_key(day):

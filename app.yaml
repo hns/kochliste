@@ -1,7 +1,16 @@
-application: kochliste
-version: 1
-runtime: python
+application: kochliste-hrd
+version: 2
+
+runtime: python27
 api_version: 1
+threadsafe: no
+
+libraries:
+- name: django
+  version: "1.2"
+
+builtins:
+- django_wsgi: on
 
 handlers:
 - url: /static

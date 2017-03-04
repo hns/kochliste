@@ -1,6 +1,6 @@
 import logging
 
-import django.newforms as forms
+from django import forms
 from google.appengine.ext import db
 
 import models
@@ -9,7 +9,7 @@ class ChildEditor(forms.Form):
     name = forms.CharField(required = True)
 
     def save(self):
-        entry = models.Child(name=self.clean_data['name'])
+        entry = models.Child(name=self.cleaned_data['name'])
         entry.current = True
         entry.put()
         return entry

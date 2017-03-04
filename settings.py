@@ -1,6 +1,7 @@
 # Django settings for kochliste project.
 import os
 
+DEFAULT_CHARSET = 'utf-8'
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 

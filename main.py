@@ -2,12 +2,17 @@
 import logging, os
 from google.appengine.ext.webapp import util
 
+# Must set this env var before importing any part of Django
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+
+# from django.core.management import setup_environ
+# import settings
+
+# setup_environ(settings)
+
 # Force Django to reload its settings.
 from django.conf import settings
 settings._target = None
-
-# Must set this env var before importing any part of Django
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 import django.core.handlers.wsgi
 import django.core.signals
@@ -19,15 +24,6 @@ import django.dispatch.dispatcher
 
 def log_exception(*args, **kwds):
   logging.exception('Exception in request:')
-
-# Log errors.
-django.dispatch.dispatcher.connect(
-   log_exception, django.core.signals.got_request_exception)
-
-# Unregister the rollback event handler.
-django.dispatch.dispatcher.disconnect(
-    django.db._rollback_on_exception,
-    django.core.signals.got_request_exception)
 
 def main():
   # Create a Django application for WSGI.
