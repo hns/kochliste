@@ -125,9 +125,6 @@ def get_month_data(year, month, plan_view):
 
 
 def list_children(request, all=None):
-    if not users.is_current_user_admin():
-        data = {'login_url': users.create_login_url("/kinder/")}
-        return render_to_response('login.html', data)
     entries = models.Child.all()
     if not all:
         entries = entries.filter('current =', True)
@@ -135,10 +132,6 @@ def list_children(request, all=None):
     return render_to_response('list.html', data)
 
 def create_child(request):
-    if not users.is_current_user_admin():
-        data = {'login_url': users.create_login_url("/kinder/")}
-        return render_to_response('login.html', data)
-
     if request.method == 'POST':
         form = forms.ChildEditor(request.POST)
         print request.POST
@@ -151,16 +144,12 @@ def create_child(request):
     return render_to_response('create.html', data)
 
 def edit_child(request):
-    if not users.is_current_user_admin():
-        data = {'login_url': users.create_login_url("/kinder/")}
-        return render_to_response('login.html', data)
-
     entry = models.Child.get(request.GET['key'])
     # print entry
     if request.method == 'POST':
         form = forms.ChildEditor(request.POST)
         if form.is_valid():
-            entry.name = form.clean_data['name']
+            entry.name = form.cleaned_data['name']
         if 'hide' in request.POST:
             entry.current = False;
         entry.put()
@@ -171,10 +160,6 @@ def edit_child(request):
     return render_to_response('edit.html', data)
 
 def set_visible_child(request):
-    if not users.is_current_user_admin():
-        data = {'login_url': users.create_login_url("/kinder/")}
-        return render_to_response('login.html', data)
-
     entry = models.Child.get(request.GET['key'])
     # print entry
     value = request.GET['v']
@@ -184,10 +169,6 @@ def set_visible_child(request):
     return HttpResponseRedirect('../')
 
 def delete_child(request):
-    if not users.is_current_user_admin():
-        data = {'login_url': users.create_login_url("/kinder/")}
-        return render_to_response('login.html', data)
-
     entry = models.Child.get(request.GET['key'])
     # print entry
     if entry:
